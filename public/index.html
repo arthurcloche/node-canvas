@@ -2,10 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Canvas Stream</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dynamic Canvas Streaming</title>
 </head>
 <body>
-    <img src="http://localhost:3000/stream-canvas" alt="Streamed Canvas Image">
+    <img id="canvasImg" src="" alt="Streamed Canvas Image">
+    <script>
+        let lastCall = Date.now();
+        let controller = new AbortController();
+        
+        document.addEventListener('mousemove', event => {
+            const now = Date.now();
+            if (now - lastCall >= 16.67) {  // Throttle to ~60FPS
+                lastCall = now;
+                const x = event.clientX;
+                const y = event.clientY;
+                const img = document.getElementById('canvasImg');
+
+                if (controller) controller.abort(); // Abort the previous request
+                controller = new AbortController();  // Create a new controller for the new request
+
+                fetch(`http://localhost:3000/stream-canvas/${x}/${y}`, { signal: controller.signal })
+                    .then(response => response.blob())
+                    .then(blob => {
+                        img.src = URL.createObjectURL(blob);
+                    })
+                    .catch(err => console.error('Fetch aborted or network error', err));
+            }
+        });
+    </script>
 </body>
 </html>
